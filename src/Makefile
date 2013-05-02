@@ -28,6 +28,9 @@ CORE_O=	lapi.o lcode.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o lmem.o \
 	lundump.o lvm.o lzio.o
 LIB_O=	lauxlib.o lbaselib.o ldblib.o liolib.o lmathlib.o loslib.o ltablib.o \
 	lstrlib.o loadlib.o linit.o
+EXT_O=	lbci.o ape.o ape_env.o ape_extra.o ape_file.o ape_fnmatch.o \
+	ape_fpath.o ape_pool.o ape_proc.o ape_time.o ape_user.o ape_random.o \
+	moon.o
 
 LUA_T=	lua
 LUA_O=	lua.o
@@ -35,9 +38,14 @@ LUA_O=	lua.o
 LUAC_T=	luac
 LUAC_O=	luac.o print.o
 
-ALL_O= $(CORE_O) $(LIB_O) $(LUA_O) $(LUAC_O)
-ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
+BUILDSH_T= buildsh
+BUILDSH_O= buildsh.o $(EXT_O)
+
+ALL_O= $(CORE_O) $(LIB_O) $(LUA_O) $(LUAC_O) $(BUILDSH_O)
+ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T) $(BUILDSH_T)
 ALL_A= $(LUA_A)
+ALL_H=	build.lua.h make.lua.h base.lua.h strace.lua.h ktrace.lua.h \
+	preload.lua.h tracker.lua.h
 
 default: $(PLAT)
 
@@ -48,7 +56,7 @@ o:	$(ALL_O)
 a:	$(ALL_A)
 
 $(LUA_A): $(CORE_O) $(LIB_O)
-	$(AR) $@ $(CORE_O) $(LIB_O)	# DLL needs all object files
+	$(AR) $@ $(CORE_O) $(LIB_O)
 	$(RANLIB) $@
 
 $(LUA_T): $(LUA_O) $(LUA_A)
@@ -57,11 +65,35 @@ $(LUA_T): $(LUA_O) $(LUA_A)
 $(LUAC_T): $(LUAC_O) $(LUA_A)
 	$(CC) -o $@ $(MYLDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS)
 
+$(BUILDSH_T): $(BUILDSH_O) $(LUA_A)
+	$(CC) -o $@ $(MYLDFLAGS) $(BUILDSH_O) $(LUA_A) $(LIBS)
+
+build.lua.h: build.lua $(LUA_T)
+	../src/$(LUA_T) lua2inc.lua build.lua
+
+make.lua.h: make.lua $(LUA_T)
+	../src/$(LUA_T) lua2inc.lua make.lua
+
+base.lua.h: base.lua $(LUA_T)
+	../src/$(LUA_T) lua2inc.lua base.lua
+
+strace.lua.h: strace.lua $(LUA_T)
+	../src/$(LUA_T) lua2inc.lua strace.lua
+
+ktrace.lua.h: ktrace.lua $(LUA_T)
+	../src/$(LUA_T) lua2inc.lua ktrace.lua
+
+preload.lua.h: preload.lua $(LUA_T)
+	../src/$(LUA_T) lua2inc.lua preload.lua
+
+tracker.lua.h: tracker.lua $(LUA_T)
+	../src/$(LUA_T) lua2inc.lua tracker.lua
+
 clean:
-	$(RM) $(ALL_T) $(ALL_O)
+	$(RM) $(ALL_T) $(ALL_O) $(ALL_H)
 
 depend:
-	@$(CC) $(CFLAGS) -MM l*.c print.c
+	@$(CC) $(CFLAGS) -MG -MM l*.c print.c moon.c ape*.c
 
 echo:
 	@echo "PLAT = $(PLAT)"
@@ -81,25 +113,25 @@ none:
 	@echo "   $(PLATS)"
 
 aix:
-	$(MAKE) all CC="xlc" CFLAGS="-O2 -DLUA_USE_POSIX -DLUA_USE_DLOPEN" MYLIBS="-ldl" MYLDFLAGS="-brtl -bexpall"
+	$(MAKE) all CC="xlc" CFLAGS="-O2 -DLUA_USE_POSIX -DLUA_USE_DLOPEN `apr-1-config --includes --cppflags --cflags`" MYLIBS="-ldl `apr-1-config --cflags --link-ld`" MYLDFLAGS="-brtl -bexpall"
 
 ansi:
 	$(MAKE) all MYCFLAGS=-DLUA_ANSI
 
 bsd:
-	$(MAKE) all MYCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN" MYLIBS="-Wl,-E"
+	$(MAKE) all MYCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN `apr-1-config --includes --cppflags --cflags`" MYLIBS="-Wl,-E `apr-1-config --cflags --link-ld`"
 
 freebsd:
-	$(MAKE) all MYCFLAGS="-DLUA_USE_LINUX" MYLIBS="-Wl,-E -lreadline"
+	$(MAKE) all MYCFLAGS="-DLUA_USE_LINUX `apr-1-config --includes --cppflags --cflags`" MYLIBS="-Wl,-E `apr-1-config --link-ld`"
 
 generic:
 	$(MAKE) all MYCFLAGS=
 
 linux:
-	$(MAKE) all MYCFLAGS=-DLUA_USE_LINUX MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses"
+	$(MAKE) all MYCFLAGS="-DLUA_USE_LINUX `apr-1-config --includes --cppflags --cflags`" MYLIBS="-Wl,-E -ldl `apr-1-config --cflags --link-ld`"
 
 macosx:
-	$(MAKE) all MYCFLAGS=-DLUA_USE_LINUX MYLIBS="-lreadline"
+	$(MAKE) all MYCFLAGS="-DLUA_USE_LINUX `apr-1-config --includes --cppflags --cflags`" MYLIBS="`apr-1-config --cflags --link-ld`"
 # use this on Mac OS X 10.3-
 #	$(MAKE) all MYCFLAGS=-DLUA_USE_MACOSX
 
@@ -107,13 +139,16 @@ mingw:
 	$(MAKE) "LUA_A=lua51.dll" "LUA_T=lua.exe" \
 	"AR=$(CC) -shared -o" "RANLIB=strip --strip-unneeded" \
 	"MYCFLAGS=-DLUA_BUILD_AS_DLL" "MYLIBS=" "MYLDFLAGS=-s" lua.exe
+	$(MAKE) "LUA_A=lua51.dll" "BUILDSH_T=buildsh.exe" \
+	"AR=$(CC) -shared -o" "RANLIB=strip --strip-unneeded" \
+	"MYCFLAGS=-DLUA_BUILD_AS_DLL -Iapr-win32/include" "MYLIBS=-Lapr-win32 -lapr-1" "MYLDFLAGS=-s" buildsh.exe
 	$(MAKE) "LUAC_T=luac.exe" luac.exe
 
 posix:
-	$(MAKE) all MYCFLAGS=-DLUA_USE_POSIX
+	$(MAKE) all MYCFLAGS="-DLUA_USE_POSIX `apr-1-config --includes --cppflags --cflags`" MYLIBS="`apr-1-config --cflags --link-ld`"
 
 solaris:
-	$(MAKE) all MYCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN" MYLIBS="-ldl"
+	$(MAKE) all MYCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN `apr-1-config --includes --cppflags --cflags`" MYLIBS="-ldl `apr-1-config --cflags --link-ld`"
 
 # list targets that do not create files (but not all makes understand .PHONY)
 .PHONY: all $(PLATS) default o a clean depend echo none
@@ -125,6 +160,8 @@ lapi.o: lapi.c lua.h luaconf.h lapi.h lobject.h llimits.h ldebug.h \
   lundump.h lvm.h
 lauxlib.o: lauxlib.c lua.h luaconf.h lauxlib.h
 lbaselib.o: lbaselib.c lua.h luaconf.h lauxlib.h lualib.h
+lbci.o: lbci.c lua.h luaconf.h lauxlib.h ldebug.h lstate.h lobject.h \
+  llimits.h ltm.h lzio.h lmem.h lopcodes.c lopcodes.h
 lcode.o: lcode.c lua.h luaconf.h lcode.h llex.h lobject.h llimits.h \
   lzio.h lmem.h lopcodes.h lparser.h ldebug.h lstate.h ltm.h ldo.h lgc.h \
   ltable.h
@@ -170,6 +207,8 @@ lua.o: lua.c lua.h luaconf.h lauxlib.h lualib.h
 luac.o: luac.c lua.h luaconf.h lauxlib.h ldo.h lobject.h llimits.h \
   lstate.h ltm.h lzio.h lmem.h lfunc.h lopcodes.h lstring.h lgc.h \
   lundump.h
+buildsh.o: buildsh.c lua.h luaconf.h lauxlib.h lualib.h moon.h \
+  $(ALL_H)
 lundump.o: lundump.c lua.h luaconf.h ldebug.h lstate.h lobject.h \
   llimits.h ltm.h lzio.h lmem.h ldo.h lfunc.h lstring.h lgc.h lundump.h
 lvm.o: lvm.c lua.h luaconf.h ldebug.h lstate.h lobject.h llimits.h ltm.h \
@@ -178,5 +217,18 @@ lzio.o: lzio.c lua.h luaconf.h llimits.h lmem.h lstate.h lobject.h ltm.h \
   lzio.h
 print.o: print.c ldebug.h lstate.h lua.h luaconf.h lobject.h llimits.h \
   ltm.h lzio.h lmem.h lopcodes.h lundump.h
+moon.o: moon.c lua.h lauxlib.h moon.h
+ape.o: ape.c lua.h lualib.h lauxlib.h moon.h ape.h
+ape_env.o: ape_env.c lua.h lauxlib.h moon.h ape.h lualib.h
+ape_extra.o: ape_extra.c lua.h lauxlib.h moon.h ape.h lualib.h
+ape_file.o: ape_file.c lua.h lauxlib.h moon.h ape.h lualib.h ape_flag.h
+ape_fnmatch.o: ape_fnmatch.c lua.h lauxlib.h moon.h ape.h lualib.h \
+  ape_flag.h
+ape_fpath.o: ape_fpath.c lua.h lauxlib.h moon.h ape.h lualib.h ape_flag.h
+ape_pool.o: ape_pool.c lua.h lauxlib.h moon.h ape.h lualib.h
+ape_proc.o: ape_proc.c lua.h lauxlib.h moon.h ape.h lualib.h
+ape_random.o: ape_random.c lua.h lauxlib.h moon.h ape.h lualib.h
+ape_time.o: ape_time.c lua.h lauxlib.h moon.h ape.h lualib.h
+ape_user.o: ape_user.c lua.h lauxlib.h moon.h ape.h lualib.h
 
 # (end of Makefile)

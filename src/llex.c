@@ -419,7 +419,7 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           read_numeral(ls, seminfo);
           return TK_NUMBER;
         }
-        else if (isalpha(ls->current) || ls->current == '_') {
+        else if (isalpha(ls->current) || ls->current == '_' || ls->current == '$') {
           /* identifier or reserved word */
           TString *ts;
           do {
