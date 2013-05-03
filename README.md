@@ -152,10 +152,10 @@ differences:
         returns these words in an array. This is for conveniently
         specifying program options/arguments.
 
-    *   `gsub(s, p, r)`
+    *   `gsub(s, pattern, replacement)`
 
         Similar to the function in the string library, but `s` may
-        also be an array, in which case this functions is recursively
+        also be an array, in which case this function is recursively
         applied to all string/table elements in this array.
 
     *   `assert(check, reason)`
@@ -240,12 +240,12 @@ differences:
     *   `run(program)`
 
         Returns a function that will run the given `program` if its
-        recorded dependencies have changed (and a means of system call
-        tracing is available). The returned function takes arguments
-        similar to the `pipe(program)` case above, but if the first
-        argument is a table, the `dir` field can be used to `chdir` to
-        another directory before executing the program, and the `echo`
-        field causes abbreviated output during execution. The updated
+        recorded dependencies have changed (in case a means of system
+        call tracing is available). The returned function takes
+        arguments similar to the `pipe(program)` case above, but if
+        the first argument is a table, the `dir` field can be used to
+        `chdir` to another directory before executing the program, and
+        the `echo` field causes abbreviated output. The updated
         dependencies are saved if the program execution is successful.
 
         This function does not raise a dependency error, so you must
