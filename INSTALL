@@ -1,3 +1,25 @@
+buildsh is basically a modified/enhanced Lua interpreter (and building Lua is
+supported on many OSes), so basically the build/install instructions of Lua
+(reproduced verbatim below) apply. The differences are:
+
+*   buildsh uses APR for portable process and filesystem handling, therefore you
+    need libapr installed. On Unixes, this is best done using a package manager.
+    The modified Makefile uses the `apr-1-config` script to determine the
+    necessary compiler flags. Windows is different (surprise!), so a batch file
+    is provided (`src\build.cmd`) which can build this program using the free
+    visual studio commandline tools. This batch file assumes that the APR
+    library (which you must build yourself) and the corresponding include files
+    are in the `src\apr-win32` directory.
+*   buildsh does not support an interactive mode, so you don't need any readline
+    library.
+*   Result of a successful build is the `buildsh` program (`buildsh.exe` on
+    Windows), which you should put somewhere in your PATH. If you linked the
+    APR library dynamically (the default), you must make sure that the dll/so is
+    available as well.
+
+
+================================================================================
+
 INSTALL for Lua 5.1
 
 * Building Lua
