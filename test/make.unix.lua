@@ -1,4 +1,4 @@
-#!/usr/bin/env luamake
+#!/usr/bin/env buildsh
 
 local cflags = make.qw[[
   -Wall -Wextra -Wfatal-errors -fno-common -Os
