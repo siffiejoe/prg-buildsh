@@ -281,53 +281,57 @@ should check for dependencies, build argument/options lists, etc.
     directly without consulting `PATH`. If a program might be found
     via different names you must fall back to something like this:
 
-        local prog = make.assert_exec( name1, path2, name3 )
-        -- later in a target function:
-        make.run( prog )( args )
+    ```lua
+    local prog = make.assert_exec( name1, path2, name3 )
+    -- later in a target function:
+    make.run( prog )( args )
+    ```
 
 ###                             Example                            ###
 
-    #!/usr/bin/env buildsh
-    
-    local cflags = make.qw[[
-      -Wall -Wextra -Wfatal-errors -fno-common -Os -fpic
-      -Imoon -DMOON_PREFIX=ape -DNDEBUG
-    ]]
-    
-    local apr_cflags = make.argv( make.pipe"apr-1-config"( "--includes", "--cppflags", "--cflags" ) )
-    local apr_ldflags = make.argv( make.pipe"apr-1-config"( "--link-ld" ) )
-    
-    local luainc = "-I"..make.assert_file( "/usr/include/lua5.2/lua.h",
-                                           "/usr/local/include/lua52/lua.h",
-                                           "/usr/include/lua.h",
-                                           "/usr/local/include/lua.h",
-                                           "/usr/include/lua5.1/lua.h",
-                                           "/usr/local/include/lua51/lua.h" ):dirname()
-    
-    local sources = make.glob( "src/*.c", "moon/*.c" )
-    local ofiles = make.gsub( sources, "%.c$", ".o" )
-    
-    local function build()
-      for _, cf in ipairs( sources ) do
-        $gcc{ cflags, luainc, apr_cflags, "-c", "-o", cf:gsub( "%.c$", ".o" ), cf, echo=cf }
-      end
-      $gcc{ cflags, apr_cflags, "-shared", "-o", "ape.so", ofiles, apr_ldflags, echo="ape.so" }
-    end
-    
-    local function documentation()
-      $"ldoc.lua"{ "--quiet", ".", dir="doc", echo="doc/config.ld" }
-    end
+```lua
+#!/usr/bin/env buildsh
 
-    local function all()
-      build()
-      documentation()
-    end
-    
-    return {
-      build = build,
-      documentation = documentation,
-      all = all,
-    }
+local cflags = make.qw[[
+  -Wall -Wextra -Wfatal-errors -fno-common -Os -fpic
+  -Imoon -DMOON_PREFIX=ape -DNDEBUG
+]]
+
+local apr_cflags = make.argv( make.pipe"apr-1-config"( "--includes", "--cppflags", "--cflags" ) )
+local apr_ldflags = make.argv( make.pipe"apr-1-config"( "--link-ld" ) )
+
+local luainc = "-I"..make.assert_file( "/usr/include/lua5.2/lua.h",
+                                       "/usr/local/include/lua52/lua.h",
+                                       "/usr/include/lua.h",
+                                       "/usr/local/include/lua.h",
+                                       "/usr/include/lua5.1/lua.h",
+                                       "/usr/local/include/lua51/lua.h" ):dirname()
+
+local sources = make.glob( "src/*.c", "moon/*.c" )
+local ofiles = make.gsub( sources, "%.c$", ".o" )
+
+local function build()
+  for _, cf in ipairs( sources ) do
+    $gcc{ cflags, luainc, apr_cflags, "-c", "-o", cf:gsub( "%.c$", ".o" ), cf, echo=cf }
+  end
+  $gcc{ cflags, apr_cflags, "-shared", "-o", "ape.so", ofiles, apr_ldflags, echo="ape.so" }
+end
+
+local function documentation()
+  $"ldoc.lua"{ "--quiet", ".", dir="doc", echo="doc/config.ld" }
+end
+
+local function all()
+  build()
+  documentation()
+end
+
+return {
+  build = build,
+  documentation = documentation,
+  all = all,
+}
+```
 
 
 ##                               Links                              ##
