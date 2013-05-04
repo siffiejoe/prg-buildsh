@@ -2,6 +2,7 @@
 
 A build tool based on [Lua][1] and inspired by [fabricate][4]
 
+
 ##                             The Idea                             ##
 
 Most people write some build tool during their programming career,
@@ -10,7 +11,7 @@ this is my attempt. Its goals are:
 *   Portability
 
     A build tool should support not only different operating systems,
-    but also as much different programming languages and tools as
+    but also as many different programming languages and tools as
     possible.
 
 *   Simplicity
@@ -27,13 +28,12 @@ this is my attempt. Its goals are:
     to every option of your programming tools, and every program that
     might be installed on your system.
 
-
 The simplest and most explicit build description so far have been
 batch files or shell scripts. Every program invocation and every
 option is visible in the file, no magic is going on. Typically some
 forms of variables and loops are used to make the build description
 shorter and more maintainable, but if you don't take it too far, you
-basically get what you see during your build.
+basically get what you see in your build scripts.
 
 The problem with batch files and shell scripts is, that they are not
 portable at all. Not only do different operating systems use different
@@ -47,10 +47,10 @@ basically as portable (and as a consequence as limited in its
 operating system interface) as ISO C, so additionally a binding to an
 operating system abstraction layer ([APR][2]) is used for process
 handling, file operations, etc. For general programming tasks like
-string manipulation you get the power and portability of Lua, and as
-far as the interface to the operating system is concerned you get the
-portability of APR, which powers e.g. the Apache web server and the
-Subversion version control system.
+string manipulation you get the expressiveness and portability of Lua,
+and as far as the interface to the operating system is concerned you
+get the portability of APR, which powers e.g. the [Apache][6] web
+server and the [Subversion][7] version control system.
 
 But if you rely on external programs (which you obviously must do for
 a general build tool), you still need to take the availability of
@@ -68,8 +68,8 @@ executed on a given system. It does so by checking for the executables
 used in a build description (before running the script), and by
 providing means of checking for file locations, etc. in the initial
 setup phase of a build script. If not all prerequisites in a build
-script can be met, `buildsh` moves on the next build script (after
-telling you what was missing).
+script can be met, `buildsh` moves on the next one (after telling you
+what was missing).
 
 So far `buildsh` would handle your builds pretty well, if you only
 intend to build your software *once* (like as an end-user). If you are
@@ -102,6 +102,7 @@ degrees of maturity):
 If none of those methods are available, `buildsh` falls back to
 building everything everytime.
 
+
 ##             Differences/Enhancements Compared to Lua             ##
 
 `buildsh` is basically a Lua 5.1 interpreter with the following
@@ -118,8 +119,7 @@ differences:
     build targets (default is `build`) which identify functions
     exported from the build script. The special `clean` target removes
     all output dependencies, the special `list` target lists all
-    targets exported by the build script. Both special targets can be
-    redefined in the build script.
+    exported targets. Both special targets can be redefined.
 
 *   Identifiers can begin with a dollar character (`$`). Globals with
     this name are reserved for external tools, though. They are
@@ -196,8 +196,8 @@ differences:
     *   `dofile(filename)`
 
         Runs the given Lua file in an empty environment and passes all
-        return values or errors. You can use it to pass data from some
-        external tool to your build scripts.
+        return values or errors. You can use it to generate data for
+        your build scripts via some external tool.
 
     *   `opt_dofile(filename)`
 
@@ -225,13 +225,13 @@ differences:
         Checks for the executable `program` and returns a function
         that will run the program and capture is output (`stdout`).
         The resulting function takes its arguments via a table (which
-        will be `flatten`ed, or the vararg parameter (`...`), or any
+        will be `flatten`ed), or the vararg parameter (`...`), or any
         combination thereof.
 
         If the program cannot be found, a special error is raised,
         that indicates a missing dependency for the current build
         script.
-        
+
         This (and the `argv(string)` function above) is intended for
         cases like `make.argv( make.pipe"pkg-config"( "--cflags" ) )`,
         and therefore should only be used during the setup phase of a
@@ -250,7 +250,7 @@ differences:
 
         This function does not raise a dependency error, so you must
         use `assert_exec(...)` explicitly, or the special `$program`
-        or `$"program"` syntaxes if that is intended.
+        or `$"program"` syntaxes, if that is intended.
 
     *   `autoclean()`
 
@@ -286,6 +286,7 @@ should check for dependencies, build argument/options lists, etc.
     -- later in a target function:
     make.run( prog )( args )
     ```
+
 
 ###                             Example                            ###
 
@@ -341,6 +342,8 @@ return {
 *   Lua Bytecode Inspector library ([lbci][3])
 *   Fabricate build tool ([fabricate][4])
 *   Naturaldocs documentation generator ([naturaldocs][5])
+*   Apache web server ([Apache][6])
+*   Subversion version control system ([Subversion][7])
 
 
   [1]:  http://www.lua.org/
@@ -348,4 +351,6 @@ return {
   [3]:  http://www.tecgraf.puc-rio.br/~lhf/ftp/lua/#lbci
   [4]:  http://code.google.com/p/fabricate/
   [5]:  http://www.naturaldocs.org/
+  [6]:  http://httpd.apache.org/
+  [7]:  http://subversion.apache.org/
 
