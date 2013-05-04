@@ -132,7 +132,7 @@ differences:
     safety measure (although there are still many ways to break the
     following build scripts).
 
-*   The Bytecode Inspector library ([lbci][2]) is available for you to
+*   The Bytecode Inspector library ([lbci][3]) is available for you to
     `require` (in addition to any Lua library already installed on
     your system).
 
