@@ -327,8 +327,14 @@ do
     [ "\r" ] = "",
   }
 
-  function argv2cmd( argv )
+  function argv2cmd( argv, dir )
     local s = ""
+    if dir then
+      if dir:match( a2c_pattern ) then
+        dir = '"' .. dir:gsub( a2c_pattern, a2c_repl ) .. '"'
+      end
+      s = "cd " .. dir .. " && "
+    end
     for i = 1, #argv do
       local a = argv[ i ]
       if a:match( a2c_pattern ) then
@@ -422,14 +428,23 @@ function make.run( p )
   return function( a, ... )
     local p = p
     local argv = flatten( p, a, ... )
-    local sargv = argv2cmd( argv )
+    local dir, echo
+    if type( a ) == "table" then
+      if type( a.echo ) == "string" then
+        echo = a.echo
+      end
+      if type( a.dir ) == "string" then
+        dir = a.dir
+      end
+    end
+    local sargv = argv2cmd( argv, dir )
     local deps, run_it = check_deps( dependencies, sargv )
     if run_it then
       dont_save_deps = nil
-      if type( a ) == "table" and type( a.echo ) == "string" then
+      if echo then
         local bn = ape.basename( p, ".exe", ".cmd", ".bat" )
         if bn then
-          err:write( "[", bn, "] ", a.echo, "\n" )
+          err:write( "[", bn, "] ", echo, "\n" )
         else
           err:write( sargv, "\n" )
         end
@@ -449,8 +464,8 @@ function make.run( p )
       if not ok then error( "exec'" .. p .. "' = " .. msg, 2 ) end
       ok, msg = pattr:io_set( "file", "file", "file" )
       if not ok then error( "exec'" .. p .. "' = " .. msg, 2 ) end
-      if type( a ) == "table" and type( a.dir ) == "string" then
-        ok, msg = pattr:dir_set( a.dir )
+      if dir then
+        ok, msg = pattr:dir_set( dir )
         if not ok then error( "exec'" .. p .. "' = " .. msg, 2 ) end
       end
       local proc, msg = ape.proc_create( p, argv, nil, pattr )
@@ -464,18 +479,15 @@ function make.run( p )
         else
           error( "exec'" .. p .. "' = " .. etype, 2 )
         end
-      else
-        if type( exec_handler ) == "table" and
-           type( exec_handler.post_process ) == "function" then
-          local dir = "."
-          if type( a ) == "table" and type( a.dir ) == "string" then
-            dir = a.dir
-          end
-          exec_handler.post_process( deps, data, dir )
-          update_deps_io( deps.input, true, false )
-          update_deps_io( deps.output )
-          dependencies[ sargv ] = deps
+      elseif type( exec_handler ) == "table" and
+             type( exec_handler.post_process ) == "function" then
+        if not dir then
+          dir = "."
         end
+        exec_handler.post_process( deps, data, dir )
+        update_deps_io( deps.input, true, false )
+        update_deps_io( deps.output )
+        dependencies[ sargv ] = deps
       end
     end
   end
