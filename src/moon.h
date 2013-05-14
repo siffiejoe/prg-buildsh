@@ -29,6 +29,7 @@
 #define MOON_CONCAT_HELPER( a, b ) a##b
 #define MOON_CONCAT( a, b ) MOON_CONCAT_HELPER( a, b )
 #define moon_make_object  MOON_CONCAT( MOON_PREFIX, _make_object )
+#define moon_propindex    MOON_CONCAT( MOON_PREFIX, _propindex )
 #define moon_add2env      MOON_CONCAT( MOON_PREFIX, _add2env )
 #define moon_checkudata   MOON_CONCAT( MOON_PREFIX, _checkudata )
 #define moon_finalizer    MOON_CONCAT( MOON_PREFIX, _finalizer )
@@ -43,6 +44,7 @@ typedef struct {
   int protect;
   luaL_Reg const* metamethods;
   luaL_Reg const* methods;
+  lua_CFunction const propindex;
 } moon_object_type;
 
 
@@ -56,6 +58,8 @@ typedef struct {
 
 MOON_API void* moon_make_object( lua_State* L, moon_object_type const* t,
                                  int env_index );
+MOON_API void moon_propindex( lua_State* L, luaL_Reg const* methods,
+                              int nup, lua_CFunction pindex );
 MOON_API void moon_add2env( lua_State* L, int udindex );
 MOON_API void* moon_checkudata( lua_State* L, int i, char const* tname );
 MOON_API int* moon_finalizer( lua_State* L, lua_CFunction func );

@@ -113,7 +113,8 @@ static ape_object_type const ape_time_type = {
   0, /* NULL (function) pointer */
   1,
   ape_time_metamethods,
-  ape_time_methods
+  ape_time_methods,
+  0 /* NULL (function) pointer */
 };
 
 

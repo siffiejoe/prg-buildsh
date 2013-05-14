@@ -354,7 +354,8 @@ static ape_object_type const ape_procattr_type = {
   0, /* NULL (function) pointer */
   1,
   NULL,
-  ape_procattr_methods
+  ape_procattr_methods,
+  0 /* NULL (function) pointer */
 };
 
 
@@ -403,7 +404,8 @@ static ape_object_type const ape_proc_type = {
   0, /* NULL (function) pointer */
   1,
   NULL,
-  ape_proc_methods
+  ape_proc_methods,
+  0 /* NULL (function) pointer */
 };
 
 

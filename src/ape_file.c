@@ -682,7 +682,8 @@ static ape_object_type const ape_file_type = {
   ape_file_init,
   1,
   ape_file_metamethods,
-  ape_file_methods
+  ape_file_methods,
+  0 /* NULL (function) pointer */
 };
 
 
@@ -843,7 +844,8 @@ static ape_object_type const ape_dir_type = {
   ape_dir_init,
   1,
   ape_dir_metamethods,
-  ape_dir_methods
+  ape_dir_methods,
+  0 /* NULL (function) pointer */
 };
 
 

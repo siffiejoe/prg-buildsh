@@ -445,6 +445,9 @@ static int ape_extra_hash_file( lua_State* L ) {
 
 #if (defined( _WIN32 ) || defined( _WIN64 ) || defined( __WINDOWS__ )) && \
      defined( APR_HAS_UNICODE_FS ) && APR_HAS_UNICODE_FS
+
+#include <wctype.h>
+
 typedef apr_uint16_t apr_wchar_t;
 
 APR_DECLARE(apr_status_t) apr_conv_ucs2_to_utf8( apr_wchar_t const* in,
@@ -452,6 +455,12 @@ APR_DECLARE(apr_status_t) apr_conv_ucs2_to_utf8( apr_wchar_t const* in,
                                                  char* out,
                                                  apr_size_t* outbytes );
 
+APR_DECLARE(apr_status_t) apr_conv_utf8_to_ucs2( char const* in,
+                                                 apr_size_t* inbytes,
+                                                 apr_wchar_t* out,
+                                                 apr_size_t* outwords );
+
+#define NUM( arr ) (sizeof( (arr) )/sizeof( *(arr) ))
 
 static int ape_extra_ucs2_to_utf8( lua_State* L ) {
   size_t tlen = 0;
@@ -466,9 +475,9 @@ static int ape_extra_ucs2_to_utf8( lua_State* L ) {
       apr_status_t rv;
       apr_size_t i = 0, j = LUAL_BUFFERSIZE, k = 0;
       char* o = luaL_prepbuffer( &outbuf );
-      for( ; i < sizeof( inbuf )/sizeof( *inbuf ) && i+done < tlen; ++i ) {
+      for( ; i < NUM( inbuf ) && i+done < tlen; ++i ) {
         lua_rawgeti( L, 1, i+done+1 );
-        inbuf[ i ] = (apr_uint16_t)luaL_checkinteger( L, -1 );
+        inbuf[ i ] = (apr_uint16_t)luaL_checkint( L, -1 );
         lua_pop( L, 1 );
       }
       k = i;
@@ -477,6 +486,52 @@ static int ape_extra_ucs2_to_utf8( lua_State* L ) {
         return ape_status( L, 0, rv );
       luaL_addsize( &outbuf, LUAL_BUFFERSIZE-j );
       done += k-i;
+    }
+    luaL_pushresult( &outbuf );
+  } else
+    lua_pushliteral( L, "" );
+  return 1;
+}
+
+
+static int ape_extra_wupper( lua_State* L ) {
+  size_t len = 0;
+  char const* s = luaL_checklstring( L, 1, &len );
+  if( len > 0 ) {
+    size_t done = 0;
+    luaL_Buffer outbuf;
+    apr_wchar_t wcbuf[ 256 ];
+    luaL_buffinit( L, &outbuf );
+    while( done < len ) {
+      apr_status_t rv;
+      apr_size_t i = len-done;
+      apr_size_t j = NUM( wcbuf );
+      apr_size_t k = 0;
+
+      /* fill wcbuf */
+      rv = apr_conv_utf8_to_ucs2( s+done, &i, wcbuf, &j );
+      if( rv == APR_EINVAL || (rv != APR_SUCCESS && j == NUM( wcbuf )) )
+        return ape_status( L, 0, rv );
+      done += len-done-i; /* number of bytes consumed */
+      j = NUM( wcbuf )-j; /* number of wchars in wcbuf */
+
+      /* run towupper on all elements in wcbuf */
+      for( k = 0; k < j; ++k )
+        wcbuf[ k ] = (apr_wchar_t)towupper( (wint_t)wcbuf[ k ] );
+
+      /* convert back to utf8 */
+      k = 0;
+      while( k < j ) {
+        apr_size_t m = LUAL_BUFFERSIZE;
+        apr_size_t n = j-k;
+        char* o = luaL_prepbuffer( &outbuf );
+        rv = apr_conv_ucs2_to_utf8( wcbuf+k, &n, o, &m );
+        if( rv == APR_EINVAL || (rv != APR_SUCCESS && m == LUAL_BUFFERSIZE) )
+          return ape_status( L, 0, rv );
+        m = LUAL_BUFFERSIZE-m; /* number of bytes in outbuf */
+        luaL_addsize( &outbuf, m );
+        k += j-k-n;
+      }
     }
     luaL_pushresult( &outbuf );
   } else
@@ -584,6 +639,8 @@ APE_API void ape_extra_setup( lua_State* L ) {
      defined( APR_HAS_UNICODE_FS ) && APR_HAS_UNICODE_FS
   lua_pushcfunction( L, ape_extra_ucs2_to_utf8 );
   lua_setfield( L, -2, "ucs2_to_utf8" );
+  lua_pushcfunction( L, ape_extra_wupper );
+  lua_setfield( L, -2, "wupper" );
 #endif
   lua_setfield( L, -2, "hacks" );
 }

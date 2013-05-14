@@ -39,9 +39,8 @@ MOON_API void* moon_make_object( lua_State* L, moon_object_type const* t,
     lua_setfield( L, -2, "__tostring" );
     if( t->metamethods )
       moon_compat_register( L, t->metamethods );
-    if( t->methods ) {
-      lua_newtable( L );
-      moon_compat_register( L, t->methods );
+    if( t->methods || t->propindex ) {
+      moon_propindex( L, t->methods, 0, t->propindex );
       lua_setfield( L, -2, "__index" );
     }
     if( t->protect ) {
@@ -59,6 +58,48 @@ MOON_API void* moon_make_object( lua_State* L, moon_object_type const* t,
     lua_replace( L, env_index );
   }
   return ptr;
+}
+
+
+static int dispatch( lua_State* L ) {
+  lua_CFunction pindex;
+  /* try method table first */
+  if( lua_istable( L, lua_upvalueindex( 1 ) ) ) {
+    lua_pushvalue( L, 2 ); /* duplicate key */
+    lua_rawget( L, lua_upvalueindex( 1 ) );
+    if( !lua_isnil( L, -1 ) )
+      return 1;
+    lua_pop( L, 1 );
+  }
+  pindex = lua_tocfunction( L, lua_upvalueindex( 2 ) );
+  return pindex( L );
+}
+
+MOON_API void moon_propindex( lua_State* L, luaL_Reg const* methods,
+                              int nups, lua_CFunction pindex ) {
+  int top = lua_gettop( L );
+  if( methods != NULL ) {
+    luaL_checkstack( L, nups + 3, NULL );
+    lua_newtable( L );
+    for( ; methods->func; ++methods ) {
+      int i = 0;
+      for( i = 0; i < nups; ++i )
+        lua_pushvalue( L, top-nups+i+1 );
+      lua_pushcclosure( L, methods->func, nups );
+      lua_setfield( L, top+1, methods->name );
+    }
+    if( nups > 0 ) {
+      lua_replace( L, top-nups+1 );
+      lua_pop( L, nups-1 );
+    }
+  } else {
+    lua_pop( L, nups );
+    lua_pushnil( L );
+  }
+  if( pindex ) {
+    lua_pushcfunction( L, pindex );
+    lua_pushcclosure( L, dispatch, 2 );
+  }
 }
 
 
@@ -92,6 +133,7 @@ MOON_API void* moon_compat_testudata( lua_State* L, int i, char const* tname ) {
   return p;
 }
 #endif
+
 
 static int type_error( lua_State* L, int i, char const* t1,
                        char const* t2 ) {

@@ -57,7 +57,8 @@ static ape_object_type const APE_FLAG_CLASS = {
   0, /* NULL (function) pointer */
   1,
   APE_FLAG_METAMETHODS,
-  NULL
+  NULL,
+  0 /* NULL (function) pointer */
 };
 
 

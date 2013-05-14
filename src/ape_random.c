@@ -104,7 +104,8 @@ static ape_object_type const ape_cryptohash_type = {
   0, /* NULL (function) pointer */
   1,
   NULL,
-  ape_cryptohash_methods
+  ape_cryptohash_methods,
+  0 /* NULL (function) pointer */
 };
 
 

@@ -34,13 +34,13 @@ do
   local cwd_up = cwd and cwd:upper()
   local dirsep = package.config:sub( 1, 1 )
 
-  function get_path( ccwd, p, normalize )
+  function get_path( ccwd, p, transform )
     if not ape.filepath_root( p, ape.FILEPATH_NATIVE ) then
       return ape.filepath_merge( ccwd, p, ape.FILEPATH_NATIVE )
     else
       local mycwd = cwd
-      if normalize then
-        mycwd, p = cwd_up, p:upper()
+      if transform then
+        mycwd, p = transform( cwd ), transform( p )
       end
       if mycwd and #mycwd <= #p and p:sub( 1, #mycwd ) == mycwd then
         local rel = p:sub( #mycwd+1 )

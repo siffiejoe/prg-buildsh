@@ -20,6 +20,14 @@ local ape = require( "ape" )
 
 local function pre_process( argv )
   local odir = os.tmpname()
+  local tempdir = ape.temp_dir_get()
+  if tempdir then
+    local root, rp = ape.filepath_root( odir, ape.FILEPATH_NATIVE )
+    if rp then
+      local d = ape.filepath_merge( tempdir, rp, ape.FILEPATH_NATIVE )
+      if d then odir = d end
+    end
+  end
   local newargv = { "tracker.exe", "/e", "/if", odir, "/c" }
   local n = #newargv
   for i = 1,#argv do
@@ -67,6 +75,7 @@ end
 
 
 local ucs2_to_utf8 = ape.hacks.ucs2_to_utf8
+local wupper = ape.hacks.wupper
 
 local function each_line( file, func, ... )
   local h = io.open( file, "rb" )
@@ -87,21 +96,21 @@ end
 
 
 local function handle_write( line, td )
-  local p = base.get_path( ".", line, true )
+  local p = base.get_path( ".", line, wupper )
   if p then
     td.output[ p ] = true
   end
 end
 
 local function handle_delete( line, td )
-  local p = base.get_path( ".", line, true )
+  local p = base.get_path( ".", line, wupper )
   if p then
     td.output[ p ] = nil
   end
 end
 
 local function handle_read( line, td )
-  local p = base.get_path( ".", line, true )
+  local p = base.get_path( ".", line, wupper )
   if p and not td.output[ p ] then
     td.input[ p ] = true
   end
@@ -110,6 +119,8 @@ end
 
 local function post_process( deps, data )
   local tempdeps = { input = {}, output = {} }
+  local loc = os.setlocale()
+  os.setlocale( ".ACP" )
   -- scan files in the temp dir
   local t = ape.path_glob( data .. "/*.write.*.tlog" )
   if t then
@@ -129,6 +140,7 @@ local function post_process( deps, data )
       each_line( t[ i ], handle_read, tempdeps )
     end
   end
+  os.setlocale( loc )
   -- remove temp dir
   t = ape.path_glob( data .. "/*.tlog" )
   if t then

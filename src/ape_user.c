@@ -96,7 +96,8 @@ static ape_object_type const ape_uid_type = {
   0, /* NULL (function) pointer */
   1,
   ape_uid_metamethods,
-  ape_uid_methods
+  ape_uid_methods,
+  0 /* NULL (function) pointer */
 };
 
 static luaL_Reg const ape_gid_metamethods[] = {
@@ -126,7 +127,8 @@ static ape_object_type const ape_gid_type = {
   0, /* NULL (function) pointer */
   1,
   ape_gid_metamethods,
-  ape_gid_methods
+  ape_gid_methods,
+  0 /* NULL (function) pointer */
 };
 
 

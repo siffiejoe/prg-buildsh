@@ -59,7 +59,8 @@ static ape_object_type const ape_pool_type = {
   ape_pool_init,
   1,
   ape_pool_metamethods,
-  ape_pool_methods
+  ape_pool_methods,
+  0 /* NULL (function) pointer */
 };
 
 
