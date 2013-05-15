@@ -39,9 +39,7 @@ do
       return ape.filepath_merge( ccwd, p, ape.FILEPATH_NATIVE )
     else
       local mycwd = cwd
-      if transform then
-        mycwd, p = transform( cwd ), transform( p )
-      end
+      if transform then mycwd = transform( cwd ) end
       if mycwd and #mycwd <= #p and p:sub( 1, #mycwd ) == mycwd then
         local rel = p:sub( #mycwd+1 )
         while rel:sub( 1, 1 ) == "/" do

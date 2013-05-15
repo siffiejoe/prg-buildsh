@@ -477,7 +477,7 @@ static int ape_extra_ucs2_to_utf8( lua_State* L ) {
       char* o = luaL_prepbuffer( &outbuf );
       for( ; i < NUM( inbuf ) && i+done < tlen; ++i ) {
         lua_rawgeti( L, 1, i+done+1 );
-        inbuf[ i ] = (apr_uint16_t)luaL_checkint( L, -1 );
+        inbuf[ i ] = (wchar_t)towupper( (wchar_t)luaL_checkint( L, -1 ) );
         lua_pop( L, 1 );
       }
       k = i;
