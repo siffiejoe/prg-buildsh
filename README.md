@@ -122,11 +122,11 @@ differences:
     exported targets. Both special targets can be redefined.
 
 *   Identifiers can begin with a dollar character (`$`). Globals with
-    this name are reserved for external tools, though. They are
+    such a name are reserved for external tools, though. They are
     checked at load time in the `PATH` environment variable as a
-    prerequisite to the build script. For executable with incompatible
-    names or complete executable paths, you can use the `$"name"`
-    syntax instead, which will do the same thing.
+    prerequisite to the build script. For executables with
+    incompatible names or complete executable paths, you can use the
+    `$"name"` syntax instead, which will do the same thing.
 
 *   You are not allowed to set globals in build scripts. This is a
     safety measure (although there are still many ways to break the
