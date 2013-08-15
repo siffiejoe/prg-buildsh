@@ -372,9 +372,9 @@ Userdata type for processes.
 */
 static luaL_Reg const ape_proc_methods[] = {
 /***
-@function in
+@function inp
 */
-  { "in", ape_proc_in_get },
+  { "inp", ape_proc_in_get },
 /***
 @function out
 */
