@@ -4,7 +4,7 @@ if not exist apr-win32\libapr-1.lib  goto :setuperror
 
 if exist *.obj del *.obj
 
-set CFLAGS=/nologo /MD /W3 /O2 /I ".\apr-win32\include" /I ".\apr-win32\include\arch" /I ".\apr-win32\include\arch\win32" /I ".\apr-win32\include\arch\unix" /c /D "NDEBUG" /D "LUA_BUILD_AS_DLL" /D _CRT_SECURE_NO_WARNINGS /D WIN32 /D WINNT /D _WINDOWS /D MOON_API=extern
+set CFLAGS=/nologo /MD /W3 /O2 /I moon /I . /I ".\apr-win32\include" /I ".\apr-win32\include\arch" /I ".\apr-win32\include\arch\win32" /I ".\apr-win32\include\arch\unix" /c /D "NDEBUG" /D "LUA_BUILD_AS_DLL" /D _CRT_SECURE_NO_WARNINGS /D WIN32 /D WINNT /D _WINDOWS /D MOON_PREFIX=moon
 
 cl.exe %CFLAGS% lapi.c
 cl.exe %CFLAGS% lauxlib.c
@@ -54,6 +54,7 @@ link.exe /nologo /OUT:luac.exe luac.obj print.obj lua5.1-static.lib
 
 cl.exe %CFLAGS% ape.c
 cl.exe %CFLAGS% ape_env.c
+cl.exe %CFLAGS% ape_errno.c
 cl.exe %CFLAGS% ape_extra.c
 cl.exe %CFLAGS% ape_file.c
 cl.exe %CFLAGS% ape_fnmatch.c
@@ -63,7 +64,7 @@ cl.exe %CFLAGS% ape_proc.c
 cl.exe %CFLAGS% ape_random.c
 cl.exe %CFLAGS% ape_time.c
 cl.exe %CFLAGS% ape_user.c
-cl.exe %CFLAGS% moon.c
+cl.exe %CFLAGS% moon\moon.c
 cl.exe %CFLAGS% buildsh.c
 link.exe /nologo /OUT:buildsh.exe buildsh.obj ape*.obj moon.obj lua5.1.lib ".\apr-win32\libapr-1.lib"
 if exist buildsh.exe (
