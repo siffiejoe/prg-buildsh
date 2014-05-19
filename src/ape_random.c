@@ -1,20 +1,20 @@
 /***
-@module ape
+  @module ape
 */
 #include <stddef.h>
-#include "lua.h"
-#include "lauxlib.h"
+#include <lua.h>
+#include <lauxlib.h>
+#include <apr_random.h>
 #include "moon.h"
 #include "ape.h"
-#include "apr_random.h"
 
 /***
-Crypto and random numbers.
-@section random
+  Crypto and random numbers.
+  @section random
 */
 /***
-Userdata type for crypto hashes.
-@type apr_crypto_hash_t
+  Userdata type for crypto hashes.
+  @type apr_crypto_hash_t
 */
 
 typedef struct {
@@ -30,6 +30,7 @@ static int ape_crypto_hash_reset( lua_State* L ) {
   return 1;
 }
 
+
 static int ape_crypto_hash_update( lua_State* L ) {
   crypto_hash* h = moon_checkudata( L, 1, APE_CRYPTOHASH_NAME );
   int i = 0;
@@ -42,6 +43,7 @@ static int ape_crypto_hash_update( lua_State* L ) {
   lua_settop( L, 1 );
   return 1;
 }
+
 
 static int ape_crypto_hash_digest( lua_State* L ) {
   crypto_hash* h = moon_checkudata( L, 1, APE_CRYPTOHASH_NAME );
@@ -70,48 +72,9 @@ static int ape_crypto_hash_digest( lua_State* L ) {
 }
 
 
-/***
-Userdata type for crypto hashes.
-@type apr_crypto_hash_t
-*/
-static luaL_Reg const ape_cryptohash_methods[] = {
-/***
-Resets the internal state.
-@function reset
-@treturn apr_crypto_hash_t the object itself for method chaining
-*/
-  { "reset", ape_crypto_hash_reset },
-/***
-Adds strings to the hash.
-@function update
-@tparam string,... ... the strings to add to the internal hash state
-@treturn apr_crypto_hash_t the object itself for method chaining
-*/
-  { "update", ape_crypto_hash_update },
-/***
-Returns a digest (either binary or in hex format).
-@function digest
-@tparam[opt] boolean binary use binary or hex format output
-@treturn string the hash digest
-*/
-  { "digest", ape_crypto_hash_digest },
-  { NULL, NULL }
-};
-
-static ape_object_type const ape_cryptohash_type = {
-  APE_CRYPTOHASH_NAME,
-  sizeof( crypto_hash ),
-  0, /* NULL (function) pointer */
-  1,
-  NULL,
-  ape_cryptohash_methods,
-  0 /* NULL (function) pointer */
-};
-
-
 static int ape_crypto_sha256_new( lua_State* L ) {
   apr_pool_t** pool = moon_checkudata( L, 1, APE_POOL_NAME );
-  crypto_hash* ch = ape_new_object( L, &ape_cryptohash_type, 1 );
+  crypto_hash* ch = moon_newobject_ref( L, APE_CRYPTOHASH_NAME, 1 );
   ch->hash = apr_crypto_sha256_new( *pool );
   ch->digest_len = 32u;
   if( ch->hash == NULL )
@@ -121,25 +84,61 @@ static int ape_crypto_sha256_new( lua_State* L ) {
 }
 
 
-/* ape module functions */
-/***
-Crypto and random numbers.
-@section random
-*/
-static luaL_Reg const ape_random_functions[] = {
-/***
-Creates a new hash object for the SHA256 algorithm.
-@function sha256_new
-@tparam apr_pool_t pool the pool to use for internal memory allocation
-@treturn apr_crypto_hash_t a new hash object
-*/
-  { "sha256_new", ape_crypto_sha256_new },
-  { NULL, NULL }
-};
-
 
 APE_API void ape_random_setup( lua_State* L ) {
-  moon_compat_register( L, ape_random_functions );
+  /***
+    Userdata type for crypto hashes.
+    @type apr_crypto_hash_t
+  */
+  luaL_Reg const ape_cryptohash_methods[] = {
+  /***
+    Resets the internal state.
+    @function reset
+    @treturn apr_crypto_hash_t the object itself for method chaining
+  */
+    { "reset", ape_crypto_hash_reset },
+  /***
+    Adds strings to the hash.
+    @function update
+    @tparam string,... ... the strings to add to the internal hash
+      state
+    @treturn apr_crypto_hash_t the object itself for method chaining
+  */
+    { "update", ape_crypto_hash_update },
+  /***
+    Returns a digest (either binary or in hex format).
+    @function digest
+    @tparam[opt] boolean binary use binary or hex format output
+    @treturn string the hash digest
+  */
+    { "digest", ape_crypto_hash_digest },
+    { NULL, NULL }
+  };
+  moon_object_type const ape_cryptohash_type = {
+    APE_CRYPTOHASH_NAME,
+    sizeof( crypto_hash ),
+    0, /* NULL (function) pointer */
+    NULL,
+    ape_cryptohash_methods
+  };
+  /* ape module functions */
+  /***
+    Crypto and random numbers.
+    @section random
+  */
+  static luaL_Reg const ape_random_functions[] = {
+  /***
+    Creates a new hash object for the SHA256 algorithm.
+    @function sha256_new
+    @tparam apr_pool_t pool the pool to use for internal memory
+      allocation
+    @treturn apr_crypto_hash_t a new hash object
+  */
+    { "sha256_new", ape_crypto_sha256_new },
+    { NULL, NULL }
+  };
+  moon_defobject( L, &ape_cryptohash_type, 0 );
+  moon_register( L, ape_random_functions );
 }
 
 

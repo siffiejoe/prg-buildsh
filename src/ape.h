@@ -3,23 +3,20 @@
 
 #include <stddef.h>
 #include <assert.h>
-#include "lua.h"
-#include "lualib.h"
-#include "lauxlib.h"
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+#include <apr.h>
+#include <apr_errno.h>
+#include <apr_pools.h>
+#include <apr_file_io.h>
+#include <apr_time.h>
+#include <apr_random.h>
 #include "moon.h"
-#include "apr.h"
-#include "apr_errno.h"
-#include "apr_pools.h"
-#include "apr_file_io.h"
-#include "apr_time.h"
-#include "apr_random.h"
 
 #ifndef APE_API
 #define APE_API MOON_API
 #endif
-
-
-typedef moon_object_type ape_object_type;
 
 
 #define ape_assert( L, rv, msg ) \
@@ -46,10 +43,9 @@ typedef moon_object_type ape_object_type;
 
 
 APE_API int ape_status( lua_State* L, int n, apr_status_t rv );
-APE_API void* ape_new_object( lua_State* L, ape_object_type const* t,
-                              int index );
 APE_API apr_pool_t** ape_opt_pool( lua_State* L, int i );
 APE_API void ape_pool_setup( lua_State* L );
+APE_API void ape_errno_setup( lua_State* L );
 APE_API void ape_env_setup( lua_State* L );
 APE_API void ape_fnmatch_setup( lua_State* L );
 APE_API void ape_fpath_setup( lua_State* L );

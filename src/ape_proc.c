@@ -1,26 +1,26 @@
 /***
-@module ape
+  @module ape
 */
 #include <stddef.h>
-#include "lua.h"
-#include "lauxlib.h"
+#include <lua.h>
+#include <lauxlib.h>
+#include <apr_thread_proc.h>
+#include <apr_strings.h>
+#include <apr_tables.h>
 #include "moon.h"
 #include "ape.h"
-#include "apr_thread_proc.h"
-#include "apr_strings.h"
-#include "apr_tables.h"
 
 /***
-Process handling.
-@section procs
+  Process handling.
+  @section procs
 */
 /***
-Userdata type for process attributes.
-@type apr_procattr_t
+  Userdata type for process attributes.
+  @type apr_procattr_t
 */
 /***
-Userdata type for processes.
-@type apr_proc_t
+  Userdata type for processes.
+  @type apr_proc_t
 */
 
 static int ape_tokenize_to_argv( lua_State* L ) {
@@ -40,6 +40,7 @@ static int ape_tokenize_to_argv( lua_State* L ) {
   return ape_status( L, 1, rv );
 }
 
+
 static int ape_procattr_io_set( lua_State* L ) {
   static char const* const names[] = {
     "file", "closed", "child", "parent",
@@ -56,6 +57,7 @@ static int ape_procattr_io_set( lua_State* L ) {
   return ape_status( L, -1, apr_procattr_io_set( *pa, in, out, err ) );
 }
 
+
 static int ape_procattr_child_in_set( lua_State* L ) {
   apr_procattr_t** pa = moon_checkudata( L, 1, APE_PROCATTR_NAME );
   apr_file_t** c_in = moon_checkudata( L, 2, APE_FILE_NAME );
@@ -65,6 +67,7 @@ static int ape_procattr_child_in_set( lua_State* L ) {
     rv = apr_procattr_child_in_set( *pa, *c_in, *p_in );
   return ape_status( L, -1, rv );
 }
+
 
 static int ape_procattr_child_out_set( lua_State* L ) {
   apr_procattr_t** pa = moon_checkudata( L, 1, APE_PROCATTR_NAME );
@@ -76,6 +79,7 @@ static int ape_procattr_child_out_set( lua_State* L ) {
   return ape_status( L, -1, rv );
 }
 
+
 static int ape_procattr_child_err_set( lua_State* L ) {
   apr_procattr_t** pa = moon_checkudata( L, 1, APE_PROCATTR_NAME );
   apr_file_t** c_err = moon_checkudata( L, 2, APE_FILE_NAME );
@@ -86,11 +90,13 @@ static int ape_procattr_child_err_set( lua_State* L ) {
   return ape_status( L, -1, rv );
 }
 
+
 static int ape_procattr_dir_set( lua_State* L ) {
   apr_procattr_t** pa = moon_checkudata( L, 1, APE_PROCATTR_NAME );
   char const* dir = luaL_checkstring( L, 2 );
   return ape_status( L, -1, apr_procattr_dir_set( *pa, dir ) );
 }
+
 
 static int ape_procattr_cmdtype_set( lua_State* L ) {
   static char const* const names[] = {
@@ -106,11 +112,13 @@ static int ape_procattr_cmdtype_set( lua_State* L ) {
   return ape_status( L, -1, apr_procattr_cmdtype_set( *pa, ct ) );
 }
 
+
 static int ape_procattr_detach_set( lua_State* L ) {
   apr_procattr_t** pa = moon_checkudata( L, 1, APE_PROCATTR_NAME );
   apr_int32_t detach = lua_toboolean( L, 2 );
   return ape_status( L, -1, apr_procattr_detach_set( *pa, detach ) );
 }
+
 
 static int ape_procattr_error_check_set( lua_State* L ) {
   apr_procattr_t** pa = moon_checkudata( L, 1, APE_PROCATTR_NAME );
@@ -118,11 +126,13 @@ static int ape_procattr_error_check_set( lua_State* L ) {
   return ape_status( L, -1, apr_procattr_error_check_set( *pa, flag ) );
 }
 
+
 static int ape_procattr_addrspace_set( lua_State* L ) {
   apr_procattr_t** pa = moon_checkudata( L, 1, APE_PROCATTR_NAME );
   apr_int32_t as = lua_toboolean( L, 2 );
   return ape_status( L, -1, apr_procattr_addrspace_set( *pa, as ) );
 }
+
 
 static int ape_procattr_user_set( lua_State* L ) {
   apr_procattr_t** pa = moon_checkudata( L, 1, APE_PROCATTR_NAME );
@@ -135,41 +145,37 @@ static int ape_procattr_user_set( lua_State* L ) {
   return ape_status( L, -1, apr_procattr_user_set( *pa, user, pw ) );
 }
 
+
 static int ape_procattr_group_set( lua_State* L ) {
   apr_procattr_t** pa = moon_checkudata( L, 1, APE_PROCATTR_NAME );
   char const* group = luaL_checkstring( L, 2 );
   return ape_status( L, -1, apr_procattr_group_set( *pa, group ) );
 }
 
+
 static int ape_proc_in_get( lua_State* L ) {
   moon_checkudata( L, 1, APE_PROC_NAME );
   lua_settop( L, 1 );
-  moon_compat_getuservalue( L, 1 );
-  lua_rawgeti( L, -1, 2 );
-  if( !lua_toboolean( L, -1 ) )
-    lua_pushnil( L );
+  moon_getuvfield( L, 1, "in" );
   return 1;
 }
+
 
 static int ape_proc_out_get( lua_State* L ) {
   moon_checkudata( L, 1, APE_PROC_NAME );
   lua_settop( L, 1 );
-  moon_compat_getuservalue( L, 1 );
-  lua_rawgeti( L, -1, 3 );
-  if( !lua_toboolean( L, -1 ) )
-    lua_pushnil( L );
+  moon_getuvfield( L, 1, "out" );
   return 1;
 }
+
 
 static int ape_proc_err_get( lua_State* L ) {
   moon_checkudata( L, 1, APE_PROC_NAME );
   lua_settop( L, 1 );
-  moon_compat_getuservalue( L, 1 );
-  lua_rawgeti( L, -1, 4 );
-  if( !lua_toboolean( L, -1 ) )
-    lua_pushnil( L );
+  moon_getuvfield( L, 1, "err" );
   return 1;
 }
+
 
 static char const* const wait_names[] = {
   "wait", "nowait", NULL
@@ -201,6 +207,7 @@ static int ape_proc_wait( lua_State* L ) {
   return ape_status( L, 0, rv );
 }
 
+
 #if 1
 static int ape_proc_wait_all_procs( lua_State* L ) {
   apr_wait_how_e f = APR_WAIT;
@@ -215,12 +222,12 @@ static int ape_proc_wait_all_procs( lua_State* L ) {
     apr_exit_why_e why = 0;
     rv = apr_proc_wait_all_procs( &proc, &exitcode, &why, f, *pool );
     if( rv == APR_CHILD_DONE ) {
-      size_t n = moon_compat_rawlen( L, 1 );
+      size_t n = moon_rawlen( L, 1 );
       size_t i = 1;
       for( i = 1; i <= n; ++i ) {
         apr_proc_t* p = NULL;
         lua_rawgeti( L, 1, i );
-        p = moon_compat_testudata( L, -1, APE_PROC_NAME );
+        p = moon_testudata( L, -1, APE_PROC_NAME );
         if( p != NULL && p->pid == proc.pid ) {
           if( APR_PROC_CHECK_EXIT( why ) ) {
             lua_pushboolean( L, exitcode == 0 );
@@ -268,16 +275,19 @@ static int ape_proc_wait_all_procs( lua_State* L ) {
 }
 #endif
 
+
 static int ape_proc_detach( lua_State* L ) {
   int daemonize = lua_toboolean( L, 1 );
   return ape_status( L, -1, apr_proc_detach( daemonize ) );
 }
+
 
 static int ape_proc_kill( lua_State* L ) {
   apr_proc_t* proc = moon_checkudata( L, 1, APE_PROC_NAME );
   int sig = luaL_checkinteger( L, 2 );
   return ape_status( L, -1, apr_proc_kill( proc, sig ) );
 }
+
 
 static int ape_pool_note_subprocess( lua_State* L ) {
   static char const* const names[] = {
@@ -296,117 +306,13 @@ static int ape_pool_note_subprocess( lua_State* L ) {
 }
 
 
-/***
-Userdata type for process attributes.
-@type apr_procattr_t
-*/
-static luaL_Reg const ape_procattr_methods[] = {
-/***
-@function io_set
-*/
-  { "io_set", ape_procattr_io_set },
-/***
-@function child_in_set
-*/
-  { "child_in_set", ape_procattr_child_in_set },
-/***
-@function child_out_set
-*/
-  { "child_out_set", ape_procattr_child_out_set },
-/***
-@function child_err_set
-*/
-  { "child_err_set", ape_procattr_child_err_set },
-/***
-@function dir_set
-*/
-  { "dir_set", ape_procattr_dir_set },
-/***
-@function cmdtype_set
-*/
-  { "cmdtype_set", ape_procattr_cmdtype_set },
-/***
-@function detach_set
-*/
-  { "detach_set", ape_procattr_detach_set },
-/***
-@function error_check_set
-*/
-  { "error_check_set", ape_procattr_error_check_set },
-/***
-@function addrspace_set
-*/
-  { "addrspace_set", ape_procattr_addrspace_set },
-/***
-@function user_set
-*/
-  { "user_set", ape_procattr_user_set },
-/***
-@function group_set
-*/
-  { "group_set", ape_procattr_group_set },
-  { NULL, NULL }
-};
-
-static ape_object_type const ape_procattr_type = {
-  APE_PROCATTR_NAME,
-  sizeof( apr_procattr_t* ),
-  0, /* NULL (function) pointer */
-  1,
-  NULL,
-  ape_procattr_methods,
-  0 /* NULL (function) pointer */
-};
-
-
 static int ape_procattr_create( lua_State* L ) {
   apr_pool_t** pool = moon_checkudata( L, 1, APE_POOL_NAME );
-  apr_procattr_t** pa = ape_new_object( L, &ape_procattr_type, 1 );
+  apr_procattr_t** pa = moon_newobject_ref( L, APE_PROCATTR_NAME, 1 );
+  lua_pushvalue( L, 1 );
+  moon_setuvfield( L, -2, "pool" );
   return ape_status( L, 1, apr_procattr_create( pa, *pool ) );
 }
-
-
-/***
-Userdata type for processes.
-@type apr_proc_t
-*/
-static luaL_Reg const ape_proc_methods[] = {
-/***
-@function inp
-*/
-  { "inp", ape_proc_in_get },
-/***
-@function out
-*/
-  { "out", ape_proc_out_get },
-/***
-@function err
-*/
-  { "err", ape_proc_err_get },
-/***
-@function wait
-*/
-  { "wait", ape_proc_wait },
-/***
-@function detach
-*/
-  { "detach", ape_proc_detach },
-/***
-@function kill
-*/
-  { "kill", ape_proc_kill },
-  { NULL, NULL }
-};
-
-static ape_object_type const ape_proc_type = {
-  APE_PROC_NAME,
-  sizeof( apr_proc_t ),
-  0, /* NULL (function) pointer */
-  1,
-  NULL,
-  ape_proc_methods,
-  0 /* NULL (function) pointer */
-};
 
 
 static int ape_proc_create( lua_State* L ) {
@@ -421,124 +327,216 @@ static int ape_proc_create( lua_State* L ) {
     luaL_checktype( L, 3, LUA_TTABLE );
   pa = moon_checkudata( L, 4, APE_PROCATTR_NAME );
   lua_settop( L, 4 );
-  moon_compat_getuservalue( L, 4 );
-  lua_rawgeti( L, -1, 1 );
-  lua_replace( L, 5 );
+  moon_getuvfield( L, 4, "pool" );
   pool = lua_touserdata( L, 5 );
   if( ape_table2argv( L, 2, &argv, *pool ) == APR_SUCCESS &&
       (lua_isnoneornil( L, 3 ) ||
        ape_table2env( L, 3, &env, *pool ) == APR_SUCCESS) ) {
-    apr_proc_t* proc = ape_new_object( L, &ape_proc_type, 5 );
+    apr_proc_t* proc = moon_newobject_ref( L, APE_PROC_NAME, 5 );
     rv = apr_proc_create( proc, name, argv, env, *pa, *pool );
     if( rv == APR_SUCCESS ) {
-      if( proc->in != NULL )
+      if( proc->in != NULL ) {
         ape_file_userdata( L, proc->in, 5 );
-      else
-        lua_pushboolean( L, 0 );
-      moon_add2env( L, 6 );
-      if( proc->out != NULL )
+        moon_setuvfield( L, 6, "in" );
+      }
+      if( proc->out != NULL ) {
         ape_file_userdata( L, proc->out, 5 );
-      else
-        lua_pushboolean( L, 0 );
-      moon_add2env( L, 6 );
-      if( proc->err != NULL )
+        moon_setuvfield( L, 6, "out" );
+      }
+      if( proc->err != NULL ) {
         ape_file_userdata( L, proc->err, 5 );
-      else
-        lua_pushboolean( L, 0 );
-      moon_add2env( L, 6 );
+        moon_setuvfield( L, 6, "err" );
+      }
     }
   }
   return ape_status( L, 1, rv );
 }
 
 
-/***
-Process handling.
-@section procs
-*/
-static luaL_Reg const ape_proc_functions[] = {
-/***
-@function procattr_create
-*/
-  { "procattr_create", ape_procattr_create },
-/***
-@function procattr_io_set
-*/
-  { "procattr_io_set", ape_procattr_io_set },
-/***
-@function procattr_child_in_set
-*/
-  { "procattr_child_in_set", ape_procattr_child_in_set },
-/***
-@function procattr_child_out_set
-*/
-  { "procattr_child_out_set", ape_procattr_child_out_set },
-/***
-@function procattr_child_err_set
-*/
-  { "procattr_child_err_set", ape_procattr_child_err_set },
-/***
-@function procattr_dir_set
-*/
-  { "procattr_dir_set", ape_procattr_dir_set },
-/***
-@function procattr_cmdtype_set
-*/
-  { "procattr_cmdtype_set", ape_procattr_cmdtype_set },
-/***
-@function procattr_detach_set
-*/
-  { "procattr_detach_set", ape_procattr_detach_set },
-/***
-@function procattr_error_check_set
-*/
-  { "procattr_error_check_set", ape_procattr_error_check_set },
-/***
-@function procattr_addrspace_set
-*/
-  { "procattr_addrspace_set", ape_procattr_addrspace_set },
-/***
-@function procattr_user_set
-*/
-  { "procattr_user_set", ape_procattr_user_set },
-/***
-@function procattr_group_set
-*/
-  { "procattr_group_set", ape_procattr_group_set },
-/***
-@function proc_create
-*/
-  { "proc_create", ape_proc_create },
-/***
-@function proc_wait
-*/
-  { "proc_wait", ape_proc_wait },
-/***
-@function proc_wait_all_procs
-*/
-  { "proc_wait_all_procs", ape_proc_wait_all_procs },
-/***
-@function proc_detach
-*/
-  { "proc_detach", ape_proc_detach },
-/***
-@function proc_kill
-*/
-  { "proc_kill", ape_proc_kill },
-/***
-@function pool_note_subprocess
-*/
-  { "pool_note_subprocess", ape_pool_note_subprocess },
-/***
-@function tokenize_to_argv
-*/
-  { "tokenize_to_argv", ape_tokenize_to_argv },
-  { NULL, NULL }
-};
-
 
 APE_API void ape_proc_setup( lua_State* L ) {
-  moon_compat_register( L, ape_proc_functions );
+  /***
+    Userdata type for process attributes.
+    @type apr_procattr_t
+  */
+  luaL_Reg const ape_procattr_methods[] = {
+  /***
+    @function io_set
+  */
+    { "io_set", ape_procattr_io_set },
+  /***
+    @function child_in_set
+  */
+    { "child_in_set", ape_procattr_child_in_set },
+  /***
+    @function child_out_set
+  */
+    { "child_out_set", ape_procattr_child_out_set },
+  /***
+    @function child_err_set
+  */
+    { "child_err_set", ape_procattr_child_err_set },
+  /***
+    @function dir_set
+  */
+    { "dir_set", ape_procattr_dir_set },
+  /***
+    @function cmdtype_set
+  */
+    { "cmdtype_set", ape_procattr_cmdtype_set },
+  /***
+    @function detach_set
+  */
+    { "detach_set", ape_procattr_detach_set },
+  /***
+    @function error_check_set
+  */
+    { "error_check_set", ape_procattr_error_check_set },
+  /***
+    @function addrspace_set
+  */
+    { "addrspace_set", ape_procattr_addrspace_set },
+  /***
+    @function user_set
+  */
+    { "user_set", ape_procattr_user_set },
+  /***
+    @function group_set
+  */
+    { "group_set", ape_procattr_group_set },
+    { NULL, NULL }
+  };
+  moon_object_type const ape_procattr_type = {
+    APE_PROCATTR_NAME,
+    sizeof( apr_procattr_t* ),
+    0, /* NULL (function) pointer */
+    NULL,
+    ape_procattr_methods
+  };
+  /***
+    Userdata type for processes.
+    @type apr_proc_t
+  */
+  luaL_Reg const ape_proc_methods[] = {
+  /***
+    @function inp
+  */
+    { "inp", ape_proc_in_get },
+  /***
+    @function out
+  */
+    { "out", ape_proc_out_get },
+  /***
+    @function err
+  */
+    { "err", ape_proc_err_get },
+  /***
+    @function wait
+  */
+    { "wait", ape_proc_wait },
+  /***
+    @function detach
+  */
+    { "detach", ape_proc_detach },
+  /***
+    @function kill
+  */
+    { "kill", ape_proc_kill },
+    { NULL, NULL }
+  };
+  moon_object_type const ape_proc_type = {
+    APE_PROC_NAME,
+    sizeof( apr_proc_t ),
+    0, /* NULL (function) pointer */
+    NULL,
+    ape_proc_methods
+  };
+  /***
+    Process handling.
+    @section procs
+  */
+  luaL_Reg const ape_proc_functions[] = {
+  /***
+    @function procattr_create
+  */
+    { "procattr_create", ape_procattr_create },
+  /***
+    @function procattr_io_set
+  */
+    { "procattr_io_set", ape_procattr_io_set },
+  /***
+    @function procattr_child_in_set
+  */
+    { "procattr_child_in_set", ape_procattr_child_in_set },
+  /***
+    @function procattr_child_out_set
+  */
+    { "procattr_child_out_set", ape_procattr_child_out_set },
+  /***
+    @function procattr_child_err_set
+  */
+    { "procattr_child_err_set", ape_procattr_child_err_set },
+  /***
+    @function procattr_dir_set
+  */
+    { "procattr_dir_set", ape_procattr_dir_set },
+  /***
+    @function procattr_cmdtype_set
+  */
+    { "procattr_cmdtype_set", ape_procattr_cmdtype_set },
+  /***
+    @function procattr_detach_set
+  */
+    { "procattr_detach_set", ape_procattr_detach_set },
+  /***
+    @function procattr_error_check_set
+  */
+    { "procattr_error_check_set", ape_procattr_error_check_set },
+  /***
+    @function procattr_addrspace_set
+  */
+    { "procattr_addrspace_set", ape_procattr_addrspace_set },
+  /***
+    @function procattr_user_set
+  */
+    { "procattr_user_set", ape_procattr_user_set },
+  /***
+    @function procattr_group_set
+  */
+    { "procattr_group_set", ape_procattr_group_set },
+  /***
+    @function proc_create
+  */
+    { "proc_create", ape_proc_create },
+  /***
+    @function proc_wait
+  */
+    { "proc_wait", ape_proc_wait },
+  /***
+    @function proc_wait_all_procs
+  */
+    { "proc_wait_all_procs", ape_proc_wait_all_procs },
+  /***
+    @function proc_detach
+  */
+    { "proc_detach", ape_proc_detach },
+  /***
+    @function proc_kill
+  */
+    { "proc_kill", ape_proc_kill },
+  /***
+    @function pool_note_subprocess
+  */
+    { "pool_note_subprocess", ape_pool_note_subprocess },
+  /***
+    @function tokenize_to_argv
+  */
+    { "tokenize_to_argv", ape_tokenize_to_argv },
+    { NULL, NULL }
+  };
+  moon_defobject( L, &ape_procattr_type, 0 );
+  moon_defobject( L, &ape_proc_type, 0 );
+  moon_register( L, ape_proc_functions );
 }
 
 
@@ -546,7 +544,7 @@ APE_API apr_status_t ape_table2argv( lua_State* L, int index,
                                      char const*** argv,
                                      apr_pool_t* pool ) {
   apr_array_header_t* array = NULL;
-  size_t len = moon_compat_rawlen( L, index );
+  size_t len = moon_rawlen( L, index );
   int top = lua_gettop( L );
   lua_pushvalue( L, index );
   index = top+1;
@@ -568,6 +566,7 @@ APE_API apr_status_t ape_table2argv( lua_State* L, int index,
   lua_settop( L, top );
   return APR_ENOMEM;
 }
+
 
 APE_API apr_status_t ape_table2env( lua_State* L, int index,
                                     char const*** env,

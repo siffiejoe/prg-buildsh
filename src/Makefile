@@ -8,7 +8,7 @@
 PLAT= none
 
 CC= gcc
-CFLAGS= -O2 -Wall $(MYCFLAGS)
+CFLAGS= -O2 -Wall -Imoon -I. -DMOON_PREFIX=moon $(MYCFLAGS)
 AR= ar rcu
 RANLIB= ranlib
 RM= rm -f
@@ -30,7 +30,7 @@ LIB_O=	lauxlib.o lbaselib.o ldblib.o liolib.o lmathlib.o loslib.o ltablib.o \
 	lstrlib.o loadlib.o linit.o
 EXT_O=	lbci.o ape.o ape_env.o ape_extra.o ape_file.o ape_fnmatch.o \
 	ape_fpath.o ape_pool.o ape_proc.o ape_time.o ape_user.o ape_random.o \
-	moon.o
+	ape_errno.o moon/moon.o
 
 LUA_T=	lua
 LUA_O=	lua.o
@@ -93,7 +93,7 @@ clean:
 	$(RM) $(ALL_T) $(ALL_O) $(ALL_H)
 
 depend:
-	@$(CC) $(CFLAGS) -MG -MM l*.c print.c moon.c ape*.c
+	@$(CC) $(CFLAGS) -MG -MM l*.c print.c moon/moon.c ape*.c
 
 echo:
 	@echo "PLAT = $(PLAT)"
@@ -207,7 +207,7 @@ lua.o: lua.c lua.h luaconf.h lauxlib.h lualib.h
 luac.o: luac.c lua.h luaconf.h lauxlib.h ldo.h lobject.h llimits.h \
   lstate.h ltm.h lzio.h lmem.h lfunc.h lopcodes.h lstring.h lgc.h \
   lundump.h
-buildsh.o: buildsh.c lua.h luaconf.h lauxlib.h lualib.h moon.h \
+buildsh.o: buildsh.c lua.h luaconf.h lauxlib.h lualib.h moon/moon.h \
   $(ALL_H)
 lundump.o: lundump.c lua.h luaconf.h ldebug.h lstate.h lobject.h \
   llimits.h ltm.h lzio.h lmem.h ldo.h lfunc.h lstring.h lgc.h lundump.h
@@ -217,18 +217,29 @@ lzio.o: lzio.c lua.h luaconf.h llimits.h lmem.h lstate.h lobject.h ltm.h \
   lzio.h
 print.o: print.c ldebug.h lstate.h lua.h luaconf.h lobject.h llimits.h \
   ltm.h lzio.h lmem.h lopcodes.h lundump.h
-moon.o: moon.c lua.h lauxlib.h moon.h
-ape.o: ape.c lua.h lualib.h lauxlib.h moon.h ape.h
-ape_env.o: ape_env.c lua.h lauxlib.h moon.h ape.h lualib.h
-ape_extra.o: ape_extra.c lua.h lauxlib.h moon.h ape.h lualib.h
-ape_file.o: ape_file.c lua.h lauxlib.h moon.h ape.h lualib.h ape_flag.h
-ape_fnmatch.o: ape_fnmatch.c lua.h lauxlib.h moon.h ape.h lualib.h \
-  ape_flag.h
-ape_fpath.o: ape_fpath.c lua.h lauxlib.h moon.h ape.h lualib.h ape_flag.h
-ape_pool.o: ape_pool.c lua.h lauxlib.h moon.h ape.h lualib.h
-ape_proc.o: ape_proc.c lua.h lauxlib.h moon.h ape.h lualib.h
-ape_random.o: ape_random.c lua.h lauxlib.h moon.h ape.h lualib.h
-ape_time.o: ape_time.c lua.h lauxlib.h moon.h ape.h lualib.h
-ape_user.o: ape_user.c lua.h lauxlib.h moon.h ape.h lualib.h
+moon/moon.o: moon/moon.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h
+ape.o: ape.c lua.h luaconf.h lualib.h lua.h lauxlib.h moon/moon.h ape.h
+ape_env.o: ape_env.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h ape.h \
+  lualib.h
+ape_errno.o: ape_errno.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h \
+  ape.h lualib.h
+ape_extra.o: ape_extra.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h \
+  ape.h lualib.h
+ape_file.o: ape_file.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h ape.h \
+  lualib.h moon/moon_flag.h moon/moon.h
+ape_fnmatch.o: ape_fnmatch.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h \
+  ape.h lualib.h moon/moon_flag.h moon/moon.h
+ape_fpath.o: ape_fpath.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h \
+  ape.h lualib.h moon/moon_flag.h moon/moon.h
+ape_pool.o: ape_pool.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h ape.h \
+  lualib.h
+ape_proc.o: ape_proc.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h ape.h \
+  lualib.h
+ape_random.o: ape_random.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h \
+  ape.h lualib.h
+ape_time.o: ape_time.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h ape.h \
+  lualib.h
+ape_user.o: ape_user.c lua.h luaconf.h lauxlib.h lua.h moon/moon.h ape.h \
+  lualib.h
 
 # (end of Makefile)

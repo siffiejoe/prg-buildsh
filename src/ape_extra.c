@@ -1,21 +1,21 @@
 /***
-@module ape
+  @module ape
 */
 #include <stddef.h>
 #include <string.h>
-#include "lua.h"
-#include "lauxlib.h"
+#include <lua.h>
+#include <lauxlib.h>
+#include <apr.h>
+#include <apr_env.h>
+#include <apr_lib.h>
+#include <apr_strings.h>
+#include <apr_fnmatch.h>
+#include <apr_file_io.h>
+#include <apr_file_info.h>
+#include <apr_thread_proc.h>
+#include <apr_mmap.h>
 #include "moon.h"
 #include "ape.h"
-#include "apr.h"
-#include "apr_env.h"
-#include "apr_lib.h"
-#include "apr_strings.h"
-#include "apr_fnmatch.h"
-#include "apr_file_io.h"
-#include "apr_file_info.h"
-#include "apr_thread_proc.h"
-#include "apr_mmap.h"
 
 
 static apr_status_t check_read( lua_State* L, char const* path,
@@ -197,16 +197,14 @@ static int ape_extra_run_collect( lua_State* L ) {
         int v = 0;
         apr_proc_wait( &proc, &exitstatus, &ewhy, APR_NOWAIT );
         v = ape_status( L, 0, rv );
-        lua_pushnil( L );
         lua_pushvalue( L, -4 );
-        return v + 2;
+        return v + 1;
       }
       rv = apr_proc_wait( &proc, &exitstatus, &ewhy, APR_WAIT );
       if( !APR_STATUS_IS_CHILD_DONE( rv ) ) {
         int v = ape_status( L, 0, rv );
-        lua_pushnil( L );
         lua_pushvalue( L, -4 );
-        return v + 2;
+        return v + 1;
       }
       if( APR_PROC_CHECK_EXIT( ewhy ) ) {
         lua_pushboolean( L, exitstatus == 0 );
@@ -321,7 +319,7 @@ static int ape_extra_path_glob( lua_State* L ) {
   apr_status_t rv = APR_SUCCESS;
   if( lua_istable( L, 1 ) ) {
     have_tab = 1;
-    tab_len = moon_compat_rawlen( L, 1 );
+    tab_len = moon_rawlen( L, 1 );
   }
   pattern = luaL_checkstring( L, 1 + have_tab );
   pool = ape_opt_pool( L, 2 + have_tab );
@@ -465,7 +463,7 @@ APR_DECLARE(apr_status_t) apr_conv_utf8_to_ucs2( char const* in,
 static int ape_extra_ucs2_to_utf8( lua_State* L ) {
   size_t tlen = 0;
   luaL_checktype( L, 1, LUA_TTABLE );
-  tlen = moon_compat_rawlen( L, 1 );
+  tlen = moon_rawlen( L, 1 );
   if( tlen > 0 ) {
     size_t done = 0;
     luaL_Buffer outbuf;
@@ -541,83 +539,96 @@ static int ape_extra_wupper( lua_State* L ) {
 #endif
 
 
-/***
-Extra functions.
-@section extras
-*/
-static luaL_Reg const ape_extra_functions[] = {
-/***
-Checks if a file exists and is readable under any of the given names.
-@function find_file
-@tparam string,... ... names to check
-@treturn string the name of the file found
-@treturn nil if the file was not found under any of the given names
-@treturn nil,string nil and an error message in case of an error
-*/
-  { "find_file", ape_extra_find_file },
-/***
-Searches for executable files (either directly or in PATH).
-@function find_exec
-@tparam string,... ... names/paths to check
-@treturn string,string the name/path and path of the file
-@treturn nil if the file was not found under any of the given names
-@treturn nil,string nil and an error message in case of an error
-*/
-  { "find_exec", ape_extra_find_exec },
-/***
-Executes a program and collects its standard output
-@function run_collect
-@tparam string type specifies how to execute the program
-@tparam string prog the program name
-@tparam table argv an array of program arguments
-@tparam[opt] table env an env table
-@tparam[opt] apr_pool_t pool a memory pool for temporary allocations
-@treturn boolean,string,number,string same as @{os.execute} in Lua 5.2 plus the output
-@treturn nil,string,nil,string nil and an error message in case of an error (plus partial output if any)
-*/
-  { "run_collect", ape_extra_run_collect },
-/***
-Strips the directory part (and file extension) of a path.
-@function basename
-@tparam string path a file path
-@tparam[opt] string,... ... file extensions to strip
-@treturn string the filename without directory (and file extension)
-*/
-  { "basename", ape_extra_basename },
-/***
-Strips the file name part of a path.
-@function dirname
-@tparam string path a file path
-@treturn string the directory part of the path without the file name
-@treturn nil,string nil and an error message in case of an error
-*/
-  { "dirname", ape_extra_dirname },
-/***
-Returns a table of matching paths.
-@function path_glob
-@tparam[opt] table t append path names to this table if given
-@tparam string pattern the pattern to search
-@tparam[opt] apr_pool_t pool memory pool for temporary allocations
-@treturn table an array of path names
-@treturn nil,string nil and an error message in case of an error
-*/
-  { "path_glob", ape_extra_path_glob },
-/***
-Hashes a whole file using memory mapping if available.
-@function hash_file
-@tparam apr_crypto_hash_t hash a hash object
-@tparam string name the file name
-@tparam[opt] apr_pool_t pool a memory pool for temporary allocations
-@treturn boolean a true value in case of success
-@treturn nil,string nil and an error message in case of an error
-*/
-  { "hash_file", ape_extra_hash_file },
-  { NULL, NULL }
-};
-
 
 APE_API void ape_extra_setup( lua_State* L ) {
-  moon_compat_register( L, ape_extra_functions );
+  /***
+    Extra functions.
+    @section extras
+  */
+  luaL_Reg const ape_extra_functions[] = {
+  /***
+    Checks if a file exists and is readable under any of the given
+    names.
+    @function find_file
+    @tparam string,... ... names to check
+    @treturn string the name of the file found
+    @treturn nil if the file was not found under any of the given
+      names
+    @treturn nil,string,number nil, an error message, and an error
+      code in case of an error
+  */
+    { "find_file", ape_extra_find_file },
+  /***
+    Searches for executable files (either directly or in PATH).
+    @function find_exec
+    @tparam string,... ... names/paths to check
+    @treturn string,string the name/path and path of the file
+    @treturn nil if the file was not found under any of the given
+      names
+    @treturn nil,string,number nil, an error message, and an error
+      code in case of an error
+  */
+    { "find_exec", ape_extra_find_exec },
+  /***
+    Executes a program and collects its standard output
+    @function run_collect
+    @tparam string type specifies how to execute the program
+    @tparam string prog the program name
+    @tparam table argv an array of program arguments
+    @tparam[opt] table env an env table
+    @tparam[opt] apr_pool_t pool a memory pool for temporary
+      allocations
+    @treturn boolean,string,number,string same as @{os.execute} in Lua
+      5.2 plus the output
+    @treturn nil,string,number,string nil, an error message, and an
+      error code in case of an error (plus partial output if any)
+  */
+    { "run_collect", ape_extra_run_collect },
+  /***
+    Strips the directory part (and file extension) of a path.
+    @function basename
+    @tparam string path a file path
+    @tparam[opt] string,... ... file extensions to strip
+    @treturn string the filename without directory (and file
+      extension)
+  */
+    { "basename", ape_extra_basename },
+  /***
+    Strips the file name part of a path.
+    @function dirname
+    @tparam string path a file path
+    @treturn string the directory part of the path without the file
+      name
+    @treturn nil,string,number nil, an error message, and an error
+      code in case of an error
+  */
+    { "dirname", ape_extra_dirname },
+  /***
+    Returns a table of matching paths.
+    @function path_glob
+    @tparam[opt] table t append path names to this table if given
+    @tparam string pattern the pattern to search
+    @tparam[opt] apr_pool_t pool memory pool for temporary allocations
+    @treturn table an array of path names
+    @treturn nil,string,number nil, an error message, and an error
+      code in case of an error
+  */
+    { "path_glob", ape_extra_path_glob },
+  /***
+    Hashes a whole file using memory mapping if available.
+    @function hash_file
+    @tparam apr_crypto_hash_t hash a hash object
+    @tparam string name the file name
+    @tparam[opt] apr_pool_t pool a memory pool for temporary
+      allocations
+    @treturn boolean a true value in case of success
+    @treturn nil,string,number nil, an error message, and an error
+      code in case of an error
+  */
+    { "hash_file", ape_extra_hash_file },
+    { NULL, NULL }
+  };
+  moon_register( L, ape_extra_functions );
   lua_newtable( L );
 #ifdef O_RDONLY
   lua_pushnumber( L, O_RDONLY );
